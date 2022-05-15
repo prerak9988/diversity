@@ -1,0 +1,8 @@
+[1,"Installing 'timevis' ...\n"]
+[1,"Retrieving 'https://cran.rstudio.com/bin/macosx/contrib/4.1/timevis_2.0.0.tgz' ...\n"]
+[1,"\tOK [downloaded 584.9 Kb in 1.6 secs]\n"]
+[1,"Installing timevis [2.0.0] ...\n"]
+[1,"\tOK [installed binary]\n"]
+[1,"Moving timevis [2.0.0] into the cache ...\n"]
+[1,"\tOK [moved to cache in 1.3 milliseconds]\n"]
+[2,"\n\n✔ Package 'timevis' successfully installed.\n"]

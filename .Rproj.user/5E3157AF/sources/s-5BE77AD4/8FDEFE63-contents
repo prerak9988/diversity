@@ -1,0 +1,802 @@
+#
+# This is a Shiny web application. You can run the application by clicking
+# the 'Run App' button above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    http://shiny.rstudio.com/
+#
+
+
+
+library(shiny)
+#library(plyr)
+#detach(package:plyr)
+library(dplyr)
+library(ggplot2)
+library(shinyWidgets)
+library(data.table)
+library(DataEditR)
+library(plotly)
+library(shinyfilter)
+library(ggiraph)
+library(DataEditR)
+library(DT)
+library(viridis)
+library(hrbrthemes)
+
+
+require(shinythemes)
+library(markdown)
+
+#install.packages("ggiraph",dependencies = TRUE)
+
+
+#~/Documents/Rshiny/cpn_dem/app  #/Users/prsethia/Documents/Rshiny/cpn_dem/data/avldata.csv
+
+local=FALSE
+gcp=TRUE
+
+if (local==TRUE)
+  
+{
+  
+  
+  avlpath = "/Users/prsethia/Documents/Rshiny/cpn_dem/data/avldata.csv"
+  riskpath = "/Users/prsethia/Documents/Rshiny/cpn_dem/data/risk.csv"
+  wupath = "/Users/prsethia/Documents/Rshiny/cpn_dem/data/wu.csv"
+  
+}
+
+if (gcp==TRUE) 
+  
+{
+  
+  #when running on docker
+  avlpath = "/cpn_dem-docker/data/avldata.csv"
+  riskpath = "/cpn_dem-docker/data/risk.csv"
+  wupath = "/cpn_dem-docker/data/wu.csv"
+  
+  
+  
+}
+
+avl <- data.frame(read.csv(avlpath, header=TRUE, sep = ","))
+risk <- data.frame(read.csv(riskpath, header=TRUE, sep = ","))
+wu  <- data.frame(read.csv(wupath, header=TRUE, sep = ","))
+
+
+
+
+
+
+ui <- fluidPage(
+  theme = shinytheme('spacelab'),
+  title = "CPN 360 Dashboard",
+  
+  sidebarLayout(
+    
+    sidebarPanel(
+      
+      # Button
+      downloadButton("downloadData", "Download"),
+      
+      
+      
+      conditionalPanel(
+        'input.dataset === "wu"',
+        
+        
+        
+        fluidRow(
+          
+          #column(6,selectInput("dataset", "Dataset:",
+          #  choices = c("wu"))),
+          #br(),
+          #column(6,downloadButton("downloadData", "Download")),
+          
+          
+          column(4, pickerInput("man", "Type:",choices = c("All",unique(as.character(wu$Type))), selected = unique(wu$Type),multiple = T)
+                 
+                 
+                 
+                 
+                 #selectizeInput(inputId = "man", label = "Type:",
+                 
+                 #                       choices = sort(unique(wu$Type)))
+                 
+                 
+                 
+                 
+          ),
+          
+          
+          column(4,pickerInput("pf", "PF:",choices = c("All",unique(as.character(wu$PRODUCT.FAMILY))), selected = unique(wu$PRODUCT.FAMILY), options = list(`actions-box` = TRUE,`live-search`=TRUE), multiple = T)
+                 
+                 
+                 #selectizeInput(inputId = "trans", label = "CPN:",
+                 
+                 #                choices = sort(unique(wu$CPN)))
+                 
+                 
+                 
+                 
+                 
+          ),
+          
+          
+          column(4,pickerInput("trans", "CPN:",choices = c("All",unique(as.character(wu$CPN))), selected = unique(wu$CPN), options = list(`actions-box` = TRUE,`live-search`=TRUE), multiple = T)
+                 
+                 
+                 #selectizeInput(inputId = "trans", label = "CPN:",
+                 
+                 #                choices = sort(unique(wu$CPN)))
+                 
+                 
+                 
+                 
+                 
+          ),
+          
+          column(5,plotOutput("mobilePlot")),
+          
+          column(3,ggiraphOutput("plot3")),
+          
+          column(3,plotOutput("simPlot"))
+          
+          
+          
+          
+          
+        ),
+        
+        
+        
+        #selectInput("Type","Type:",choices = wu$Type)
+        
+        
+        helpText("Click the column header to sort a column.")
+        
+      ),
+      
+      conditionalPanel(
+        
+        'input.dataset === "avl"',
+        
+        fluidRow(
+          
+          
+          
+          column(3,pickerInput("transp", "CPN:",
+                               choices = c("All",unique(as.character(avl$CPN))), selected = unique(avl$CPN), options = list(`actions-box` = TRUE, `live-search`=TRUE),multiple = T)
+          ),
+          
+          
+          
+          column(3,ggiraphOutput("plot")),
+          
+          column(3,ggiraphOutput("plot2")),
+          
+          column(3,plotOutput("phonePlot"))
+          
+          
+          
+          #column(5,plotlyOutput("graph"))
+          
+          
+          
+          
+          
+          
+        )
+        #,
+        
+        #column(6,
+        #      selectizeInput("transpo",
+        #                    "CPN:",
+        #                     list("12-0749-01","15-2201-01"))
+        
+        
+        
+      ),
+      
+      
+      
+      
+      
+      
+      width=12),
+    
+    
+    sidebarPanel(
+      
+      conditionalPanel(
+        'input.dataset === "risk"',
+        
+        
+        
+        fluidRow(
+          
+          
+          
+          column(3,pickerInput("transpo", "CPN:",
+                               choices = c("All",unique(as.character(risk$CPN))), selected = unique(risk$CPN), options = list(`actions-box` = TRUE, `live-search`=TRUE),multiple = T)
+          ),
+          
+          column(8,plotOutput("memPlot"))
+          
+          
+          
+          
+          
+          
+        )
+        
+        
+        
+      ), width=12)
+    
+    
+    
+  ),
+  mainPanel(
+    
+    tabsetPanel(
+      
+      id = 'dataset',
+      
+      tabPanel("wu", DT::dataTableOutput("mytable1")),
+      
+      
+      tabPanel("avl", DT::dataTableOutput("mytable2")),
+      
+      
+      
+      
+      #"avl", DT::dataTableOutput("mytable2"), "Plot", plotOutput("phonePlot")),
+      tabPanel("risk", DT::dataTableOutput("mytable3"))
+      
+    )
+  )
+)
+
+
+server <- function(input, output,session) {
+  
+  # choose columns to display
+  
+  
+  
+  #output$mytable1 <- DT::renderDataTable({
+  
+  # DT::datatable(wu[wu$Type == input$Type,])
+  
+  
+  #wu[wu$Type == input$Type,]
+  #TypeFilter <- subset(wu, wu$Type == input$Type)
+  
+  #DT::datatable(wu, options = list(lengthMenu = c(5, 30, 50), pageLength = 15))
+  
+  #})
+  
+  #Link download to  filters
+  
+  datasetInput <- reactive({
+    switch(input$dataset,
+           #"wu"=wu %>%
+           filter( wu, wu$Type %in% input$man & wu$PRODUCT.FAMILY %in% input$pf & wu$CPN %in% input$trans),
+           
+           
+           
+           "avl"= avl %>%
+             filter(avl, avl$CPN %in% input$transp) ,
+           
+           "risk" = risk %>%
+             
+             filter(risk, risk$CPN %in% input$transpo)
+           
+    )
+    
+    #%>%
+    # filter(wu$Type == input$man) %>%
+    #filter(avl$CPN == input$transp) 
+    
+  })
+  
+  
+  
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste(input$dataset, ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(datasetInput(), file, row.names = FALSE)
+    }
+  )
+  
+  
+  
+  
+  
+  
+  
+  # observeEvent(c(input$man, input$pf),
+  #              
+  #              {updatePickerInput(session = session,
+  #                                 
+  #                                 inputId = 'trans',
+  #                                 
+  #                                 choices = if(!is.null(input$Type=="All" & input$PRODUCT.FAMILY == "All" )){sort(c("All", unique(wu$CPN)))
+  #                                   
+  #                                 }else if(!is.null(input$Type =="All" & input$PRODUCT.FAMILY != "All" )){sort(c("All", unique(wu$CPN[wu$PRODUCT.FAMILY %in% input$pf])))
+  #                                   
+  #                                 }else if(!is.null(input$Type !="All" & input$filter_b == "All")){sort(c("All", unique(wu$CPN[wu$Type%in%input$man])))
+  #                                   
+  #                                 }else{sort(c("All", unique(wu$CPN[wu$Type%in%input$man & wu$PRODUCT.FAMILY%in%input$pf ])))},
+  #                                 
+  #                                 selected = c("All"))
+  #              })
+  # 
+  # 
+  
+  # observeEvent(c(input$man, input$pf), {
+  # 
+  #   if(input$man == "All") {fa <- unique(wu$Type)} else fa <- input$man
+  #   if(input$pf == "All") {fb <- unique(wu$PRODUCT.FAMILY)} else fb <- input$pf
+  # 
+  #   choices <- c(" All", unique(wu$CPN[wu$Type %in% fa & wu$PRODUCT.FAMILY %in% fb ]))
+  #   updatePickerInput(session = session, inputId = 'trans', choices = choices, selected = unique(wu$CPN))
+  # 
+  # })
+  
+  
+  
+  #for cascading in wu for PF filter via Type
+  observe({
+    
+    
+    x <- wu %>% filter(Type %in% input$man ) %>% select(PRODUCT.FAMILY)
+    
+    updatePickerInput(session, "pf", "PF:",choices = unique(x),selected = unique(wu$PRODUCT.FAMILY) )
+    
+    
+    
+    
+  })
+  
+  
+  observe({
+    
+    
+    if(is.null(input$pf)==F)
+      
+    { y <- wu %>% filter ( Type %in% input$man  & PRODUCT.FAMILY %in% input$pf ) %>% select(CPN) }
+    
+    else y <- wu %>% filter(Type %in% input$man) %>% select(CPN)
+    
+    
+    updatePickerInput(session, "trans", "CPN:",choices = unique(y),selected = unique(wu$CPN) )
+    
+    
+    
+  })
+  
+  
+  
+  # observe({
+  # 
+  #   y <- wu %>% filter(Type %in% input$man) %>% select(CPN)
+  # 
+  # 
+  #   updatePickerInput(session, "trans", "CPN:",choices = unique(y),selected =   )
+  # 
+  # 
+  # 
+  # })
+  
+  
+  
+  # observe({
+  #   CM_list <- Uni_Sel%>%filter(COMMODITY_GROUP %in% input$Comm & is.na(COMM_MGR)==F & COMM_MGR != "")%>%select(COMM_MGR)
+  #   CM_list <- as.data.frame(unique(CM_list))
+  #   rownames(CM_list)<-as.character(CM_list$COMM_MGR)
+  #   updatePickerInput(session, inputId="CM", choices = sort(rownames(CM_list)), selected = rownames(CM_list))
+  # })
+  # 
+  # observe({
+  #   Supplier_list <- Uni_Sel%>%filter(COMMODITY_GROUP %in% input$Comm & COMM_MGR %in% input$CM & is.na(SUPPLIER_NAME)==F & SUPPLIER_NAME != "")%>%select(SUPPLIER_NAME)
+  #   Supplier_list <- as.data.frame(unique(Supplier_list))
+  #   rownames(Supplier_list)<-as.character(Supplier_list$SUPPLIER_NAME)
+  #   updatePickerInput(session, inputId="Supplier", choices = sort(rownames(Supplier_list)), selected = rownames(Supplier_list))
+  #   
+  # })
+  # 
+  # 
+  # 
+  # # create a reactive AVL table
+  # df <- reactive({
+  #   #readRDS("/stage/AVL_Data/AVL_details.rds")
+  #   AVL_details
+  # })
+  
+  
+  
+  # observeEvent(c(input$man, input$trans), {
+  # 
+  #   if(input$man == "All") {fa <- unique(wu$Type)} else fa <- input$man
+  #   if(input$trans == "All") {fb <- unique(wu$CPN)} else fb <- input$trans
+  # 
+  #   choices <- c(" All", unique(wu$PRODUCT.FAMILY[wu$Type %in% fa & wu$CPN %in% fb ]))
+  #   updatePickerInput(session = session, inputId = 'pf', choices = choices, selected = unique(wu$PRODUCT.FAMILY))
+  # 
+  # })
+  
+  
+  # #For C
+  # 
+  # observeEvent(c(input$filter_a, input$filter_b, input$filter_d), {
+  #   
+  #   if(input$filter_a==" All") {fa <- unique(df$column_a)} else fa <- input$filter_a
+  #   if(input$filter_b==" All") {fb <- unique(df$column_b)} else fb <- input$filter_b
+  #   if(input$filter_d==" All") {fd <- unique(df$column_d)} else fd <- input$filter_d
+  #   
+  #   choices <- c(" All", unique(df$column_c[df$column_a %in% fa & df$column_b %in% fb & df$column_d %in% fd]))
+  #   updatePickerInput(session = session, inputId = 'filter_c', choices = choices, selected = unique(wu$CPN) )
+  #   
+  # })
+  
+  
+  # #for cascading in wu for CPN filter via Type
+  # observe({
+  # 
+  # 
+  # 
+  #   z <- wu %>% filter(Type %in% input$man) %>% select(CPN)
+  #   updatePickerInput(session, "trans", "CPN:",choices = unique(z),selected = unique(wu$CPN) )
+  # 
+  # 
+  # })
+  # 
+  # #for cascading in wu for PF filter via Type
+  # observe({
+  # 
+  # 
+  #   x <- wu %>% filter(Type %in% input$man) %>% select(PRODUCT.FAMILY)
+  #   updatePickerInput(session, "pf", "PF:",choices = unique(x),selected = unique(wu$PRODUCT.FAMILY) )
+  # 
+  # 
+  # })
+  # 
+  # 
+  # 
+  
+  #for cascading in avl for CPN via Type
+  observe({
+    
+    
+    y <- wu %>% filter(Type %in% input$man) %>% select(CPN)
+    updatePickerInput(session, "transp", "CPN:",choices = unique(y) ,selected = unique(avl$CPN))
+    
+    
+  })
+  
+  
+  #for cascading in risk for CPN via Type
+  observe({
+    
+    
+    y <- wu %>% filter(Type %in% input$man) %>% select(CPN)
+    updatePickerInput(session, "transpo", "CPN:",choices = unique(y) ,selected = unique(risk$CPN))
+    
+    
+  })
+  
+  
+  #output$mytable1 <- DT::renderDataTable(DT::datatable({
+  #wu 
+  #FilteredData <- reactive ({
+  #a <- subset(wu, wu$Type %in% input$man)
+  #a <- subset(a, a$CPN %in% input$trans)
+  #a <- droplevels(a)
+  # return(a)
+  
+  #})
+  
+  #wu
+  #}))
+  
+  # output$mytable1 <- DT::renderDataTable(DT::datatable({
+  
+  #  wu 
+  
+  # ifelse(input$man != "All",wu <- wu[wu$Type == input$man,],wu) 
+  
+  #if (input$man != "All") {
+  # wu<- wu[wu$Type == input$man,]
+  #}
+  
+  #ifelse(input$trans != "All", wu[wu$CPN == input$trans,],wu)
+  #if (input$trans != "All") {
+  # wu <- wu[wu$CPN == input$trans,]
+  #}
+  
+  #wu
+  
+  #}))
+  
+  output$mytable1 <- DT::renderDataTable(DT::datatable({
+    
+    wu 
+    
+    ifelse(input$man != "All", wu <- wu[wu$Type %in% input$man,], wu) 
+    
+    ifelse(input$trans != "All", wu <- wu[wu$CPN %in% input$trans,], wu)
+    
+    ifelse(input$pf != "All", wu <- wu[wu$PRODUCT.FAMILY %in% input$pf,], wu)
+    
+    
+    #if (input$trans != "All") {
+    # wu <- wu[wu$CPN == input$trans,]
+    #}
+    
+    wu
+    
+  }))
+  
+  
+  
+  
+  # sorted columns are colored now because CSS are attached to them
+  output$mytable2 <- DT::renderDataTable(DT::datatable({
+    
+    avl 
+    
+    ifelse(input$transp != "All", avl <- avl[avl$CPN %in% input$transp,], avl) 
+    
+    # if (input$transp != "All") {
+    #  avl <- avl[avl$CPN == input$transp,]
+    #}
+    
+    avl
+    
+  }))
+  
+  
+  # customize the length drop-down menu; display 5 rows per page by default
+  
+  output$mytable3 <- DT::renderDataTable(DT::datatable({
+    
+    risk 
+    
+    ifelse(input$transpo != "All", risk <- risk[risk$CPN %in% input$transpo,], risk) 
+    
+    
+    risk
+    
+    
+    
+    
+  }))
+  
+  
+  final_table <- reactive({
+    
+    a <- subset(avl, avl$CPN %in% input$transp) %>% group_by(PSL.STATUS) %>%
+      summarise(unique_CPN = n_distinct(CPN)) %>%
+      mutate(percentage = unique_CPN/sum(unique_CPN)) %>%
+      mutate(percentage_label = paste0(round(100 * percentage, 1), "%"),hover_text = paste0(PSL.STATUS, ": ", unique_CPN," (Unique CPN Count)", "\n ","(",percentage_label,")"))
+    a <- droplevels(a)
+    
+  })
+  
+  
+  output$plot <- renderggiraph({
+    donut_plot <- ggplot(final_table(), aes(y = unique_CPN, fill = PSL.STATUS))+
+      geom_bar_interactive(
+        aes(x = 3, tooltip = hover_text),
+        width = 0.1,
+        stat = "identity",
+        show.legend = FALSE
+      ) +
+      annotate(
+        geom = "text",
+        x = 2.8,
+        y = 0,
+        label = 12,
+        size = 0
+      ) + scale_fill_brewer(palette = 4)+
+      coord_polar(theta="y")+ theme_void() + ggtitle("PSL Status") + theme(plot.title = element_text(hjust = 0.5))
+    
+    ggiraph(ggobj = donut_plot)
+  })
+  
+  
+  
+  
+  # final_table2 <- reactive({
+  #   
+  #   b <- subset(avl, avl$CPN %in% input$transp)
+  #   b$FCST.QTY.52WK <- as.numeric(gsub(",","",b$FCST.QTY.52WK,fixed=TRUE))
+  #   b <- data.frame(b)
+  #   
+  # })
+  # 
+  # 
+  # output$graph <- renderPlotly({
+  #   ggplot(final_table2(), aes(CPN,FCST.QTY.52WK,group = 1))+geom_line(color="cornflowerblue")+geom_point(aes(text = paste("CPN: ",CPN, "\n52WK Forecast: ", so_formatter(FCST.QTY.52WK))),color = "cornflowerblue") +
+  #     ggtitle("52WK Forecast")+theme_classic() +
+  #     theme(axis.line.y =element_blank(),axis.title.x=element_blank(),
+  #           axis.ticks.x=element_blank(),axis.title.y = element_blank(),
+  #           axis.ticks.y=element_blank())+theme(axis.text.x = element_text(angle=45, hjust=1, vjust = 1)) +scale_y_continuous(labels = human_num)-> g
+  #   ggplotly(g, tooltip = "text")
+  #   
+  # })
+  
+  final_table2 <- reactive({
+    
+    a <- subset(avl, avl$CPN %in% input$transp) %>% group_by(MANUFACTURER.QUAL.STATUS) %>%
+      summarise(unique_CPN = n_distinct(CPN)) %>%
+      mutate(percentage = unique_CPN/sum(unique_CPN)) %>%
+      mutate(percentage_label = paste0(round(100 * percentage, 1), "%"),hover_text = paste0(MANUFACTURER.QUAL.STATUS, ": ", unique_CPN," (Unique CPN Count)", "\n ","(",percentage_label,")"))
+    a <- droplevels(a)
+    
+  })
+  
+  
+  
+  output$plot2 <- renderggiraph({
+    donut_plot2 <- ggplot(final_table2(), aes(y = unique_CPN, fill = MANUFACTURER.QUAL.STATUS ))+
+      geom_bar_interactive(
+        aes(x = 3, tooltip = hover_text),
+        width = 0.1,
+        stat = "identity",
+        show.legend = FALSE
+      ) +
+      annotate(
+        geom = "text",
+        x = 2.8,
+        y = 0,
+        label = 12,
+        size = 0
+      ) + scale_fill_brewer(palette = 4)+
+      coord_polar(theta="y")+ theme_void() +  ggtitle("Manufacturer Qual Status") + theme(plot.title = element_text(hjust = 0.5))
+    
+    ggiraph(ggobj = donut_plot2)
+  })
+  
+  
+  
+  final_table3 <- reactive({
+    
+    a <- subset(wu, wu$CPN %in% input$trans) %>% group_by(PRODUCT.CATEGORY) %>%
+      summarise(unique_CPN = n_distinct(CPN)) %>%
+      mutate(percentage = unique_CPN/sum(unique_CPN)) %>%
+      mutate(percentage_label = paste0(round(100 * percentage, 1), "%"),hover_text = paste0(PRODUCT.CATEGORY, ": ", unique_CPN," (Unique CPN Count)", "\n ","(",percentage_label,")"))
+    a <- droplevels(a)
+    
+  })
+  
+  
+  
+  output$plot3 <- renderggiraph({
+    donut_plot3 <- ggplot(final_table3(), aes(y = unique_CPN, fill = PRODUCT.CATEGORY ))+
+      geom_bar_interactive(
+        aes(x = 3, tooltip = hover_text),
+        width = 0.1,
+        stat = "identity",
+        show.legend = TRUE
+      ) +
+      annotate(
+        geom = "text",
+        x = 2.8,
+        y = 0,
+        label = 12,
+        size = 0
+      ) + scale_fill_brewer(palette = 4)+
+      coord_polar(theta="y")+ theme_void() +  ggtitle("Product Category") + theme(plot.title = element_text(hjust = 0.5))
+    
+    ggiraph(ggobj = donut_plot3)
+  })
+  
+  
+  
+  data2 <- reactive ({
+    # Render a barplot
+    req(input$transp)
+    df <- avl %>% filter (avl$CPN %in% input$transp) %>% group_by(MFR.PART.LIFECYCLE) %>% summarize(unique_CPN = n_distinct(CPN)) 
+    
+    
+  })
+  
+  output$phonePlot <- renderPlot({
+    
+    
+    g <- ggplot(data2(), aes(y=unique_CPN , x=MFR.PART.LIFECYCLE, color = MFR.PART.LIFECYCLE, fill = MFR.PART.LIFECYCLE, label = unique_CPN)) #tooltip = MFR.PART.LIFECYCLE ) 
+    
+    g+  geom_col(width=0.7) +  ggtitle("Part Lifecycle") +
+      geom_text(nudge_y = 10, color = "black") +
+      xlab("Mfr Part Lifecycle") + ylab("Unique CPN") +
+      theme_bw() + theme(legend.position = "none") + 
+      theme(plot.title = element_text(hjust = 0.5))
+    
+  })
+  
+  
+  
+  data3 <- reactive ({
+    
+    req(input$trans)
+    df2 <- wu %>% filter (wu$CPN %in% input$trans) %>% group_by(CLASSIFICATION) %>% summarize(unique_CPN = n_distinct(CPN)) 
+    
+    
+  })
+  
+  output$mobilePlot <- renderPlot({
+    
+    
+    g <- ggplot(data3(), aes(y=unique_CPN , x=CLASSIFICATION, color = CLASSIFICATION, fill = CLASSIFICATION, label = unique_CPN)) #tooltip = MFR.PART.LIFECYCLE ) 
+    
+    g+  geom_col(width=0.7) +  ggtitle("CLASSIFICATION") +
+      geom_text(nudge_y = 10, color = "black") +
+      xlab("Classification") + ylab("Unique CPN") +
+      theme_bw() + theme(legend.position = "none") + 
+      theme(plot.title = element_text(hjust = 0.5)) 
+  })
+  
+  
+  data4 <- reactive ({
+    # Render a barplot
+    req(input$trans)
+    df3 <- wu %>% filter (wu$CPN %in% input$trans) %>% group_by(Type) %>% summarize(unique_CPN = n_distinct(CPN)) 
+    
+    
+  })
+  
+  output$simPlot <- renderPlot({
+    
+    
+    g <- ggplot(data4(), aes(y=unique_CPN , x=Type, color = Type, fill = Type, label = unique_CPN)) #tooltip = MFR.PART.LIFECYCLE ) 
+    
+    g+  geom_col(width=0.7) +  ggtitle("NPI/Sustaining/End of Production") +
+      geom_text(nudge_y = 10, color = "black") +
+      xlab("Type") + ylab("Unique CPN") +
+      theme_bw() + theme(legend.position = "none") + 
+      theme(plot.title = element_text(hjust = 0.5))
+    
+  })
+  
+  
+  
+  data5 <- reactive ({
+    # Render a barplot
+    req(input$transpo)
+    df4 <- risk %>% filter (risk$CPN %in% input$transpo) %>% group_by(CPN.RISK, CPN.MITIGATION.STATUS) %>% summarize(unique_CPN = n_distinct(CPN))
+    
+    
+  })
+  
+  output$memPlot <- renderPlot({
+    
+    
+    g <- ggplot(data5(), aes(y=unique_CPN , x=CPN.MITIGATION.STATUS, color = CPN.RISK, fill = CPN.RISK, label = unique_CPN)) #tooltip = MFR.PART.LIFECYCLE )
+    
+    
+    g+  geom_col(width=0.8, stat="identity") +  
+      ggtitle("CPN Risk") +
+      #scale_fill_manual(CPN.RISK = c(""="orange","Inactive"="blue","Not Rated"="light blue","Green"="green","Red"="red","Yellow"="yellow")) 
+      geom_text(nudge_y = 10, color = "black") +
+      xlab("Mitigation Status") + ylab("Unique CPN") +
+      facet_wrap(~CPN.RISK)+
+      theme_bw() + theme(legend.position = "right") +
+      theme(plot.title = element_text(hjust = 0.5)) 
+    
+  })
+  
+}
+
+shinyApp(ui, server)
+
+
+
+# scale_fill_manual(values = c("Inactive"="blue","Red"="red","Yellow"="yellow","Green"="green",""="light blue",""="orange"))
+

@@ -1,0 +1,13 @@
+name: appsilon-hiring
+title: appsilon-hiring
+username:
+account: product-redesign-tool
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6304164
+bundleId: 5907424
+url: https://product-redesign-tool.shinyapps.io/appsilon-hiring/
+when: 1652595337.36755
+lastSyncTime: 1652595337.36759
+asMultiple: FALSE
+asStatic: FALSE
