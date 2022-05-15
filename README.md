@@ -12,7 +12,7 @@ Links:
 
 Shinyapps: https://product-redesign-tool.shinyapps.io/appsilon-hiring/
 
-Github:
+Github:  https://github.com/prerak9988/diversity-appsilon
 
 Features:
 
